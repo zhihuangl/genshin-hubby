@@ -10,7 +10,6 @@ const Comments = () => {
     const [newComment, setNewComment] = useState('');
 
     useEffect(() => {
-        // Fetch the specific post from supabase
         const fetchPost = async () => {
             try {
                 const { data, error } = await supabase.from('posts').select('*').eq('id', postId);
@@ -25,7 +24,6 @@ const Comments = () => {
                         genshin_character: selectedPost.genshin_character,
                     });
                 } else {
-                    // Handle case where no data is returned
                     console.error('No data found for post ID:', postId);
                 }
             } catch (error) {
@@ -33,7 +31,6 @@ const Comments = () => {
             }
         };
 
-        // Fetch comments for the specific post from supabase
         const fetchComments = async () => {
             try {
                 const { data, error } = await supabase.from('comments').select('*').eq('post_id', postId);
@@ -53,31 +50,35 @@ const Comments = () => {
     }, [postId]);
 
     const handleAddComment = async () => {
-        // Add a new comment to the supabase.comments table
         try {
-            const { data, error } = await supabase
+            const { error } = await supabase
                 .from('comments')
                 .insert([{ post_id: postId, comment_text: newComment }]);
-            window.location.href = `/comments/${postId}`;
+
             if (error) {
-                console.error('Error adding comment:', error);
-            } else if (data && data.length > 0) {
-                // Update the state to include the new comment
-                setComments((prevComments) => [...prevComments, data[0]]);
-                // Clear the input field
-                setNewComment('');
+                console.error('Error adding comment:', error.message);
             } else {
-                console.error('No data returned after adding comment');
+                // Fetch comments again after adding a new comment
+                try {
+                    const { data, error } = await supabase.from('comments').select('*').eq('post_id', postId);
+
+                    if (error) {
+                        console.error('Error fetching comments:', error);
+                    } else {
+                        setComments(data || []);
+                    }
+                } catch (error) {
+                    console.error('Error fetching comments:', error);
+                }
             }
         } catch (error) {
-            console.error('Error adding comment:', error);
+            console.error('Error adding comment:', error.message);
         }
     };
 
     const clearComments = async () => {
         try {
-            // Delete all comments for the specific post from the supabase.comments table
-            const { data, error } = await supabase
+            const { error } = await supabase
                 .from('comments')
                 .delete()
                 .eq('post_id', postId);
@@ -85,14 +86,12 @@ const Comments = () => {
             if (error) {
                 console.error('Error clearing comments:', error);
             } else {
-                // Update the state to remove all comments
                 setComments([]);
             }
         } catch (error) {
             console.error('Error clearing comments:', error);
         }
     };
-
 
     return (
         <>
@@ -105,16 +104,16 @@ const Comments = () => {
                             <h2>{post.genshin_character} Posted: </h2>
                             <h3>{post.post_title}</h3>
                             <p>{post.post_text}</p>
-
                         </div>
                     )}
                     <br />
                     <h3>Comments for Post:</h3>
                     {comments.length > 0 ? (
                         <div className="comments-list">
-                            {comments.map((comment, index=1) => (
-                                <p key={comment.id}>{index++}. {comment.comment_text}</p>
+                            {comments.map((comment, index) => (
+                                <p key={comment.id}>{index + 1}. {comment.comment_text}</p>
                             ))}
+
                         </div>
                     ) : (
                         <p>No comments for this post yet.</p>
@@ -136,9 +135,7 @@ const Comments = () => {
                     </div>
                 </div>
             </div>
-
         </>
-
     );
 };
 
